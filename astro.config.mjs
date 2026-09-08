@@ -6,7 +6,7 @@ import sitemap from "@astrojs/sitemap";
 
 // ΑΛΛΑΞΕ ΑΥΤΟ όταν έχουμε domain. Χρησιμοποιείται σε canonical, og:url,
 // sitemap.xml και rss.xml — αν είναι λάθος, η Google δείχνει σε λάθος διεύθυνση.
-const SITE = "https://to-theros.netlify.app";
+const SITE = "https://to-theros.pages.dev";
 
 export default defineConfig({
   site: SITE,

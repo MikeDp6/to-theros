@@ -1,0 +1,12 @@
+# Cloudflare Pages διαβάζει αυτό το αρχείο από το dist/.
+
+# Τα assets που φτιάχνει το Astro έχουν hash στο όνομα -> αλλάζουν όνομα
+# όταν αλλάξει το περιεχόμενο, οπότε μπορούν να μείνουν στην cache για πάντα.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Οι σελίδες πρέπει να ξαναζητιούνται, αλλιώς ο κόσμος βλέπει παλιό site.
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

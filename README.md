@@ -76,10 +76,25 @@ public/               logo, favicon, bg, og-default.jpg, robots.txt
 | `/rss.xml` | feed — και τροφοδοσία του newsletter |
 | `/sitemap-index.xml` | για το Google Search Console |
 
+## Deploy
+
+Cloudflare Pages, συνδεδεμένο στο branch `astro`.
+
+| Ρύθμιση | Τιμή |
+|---|---|
+| Framework preset | Astro |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Production branch | `astro` |
+
+Το `public/_headers` ρυθμίζει την cache και αντιγράφεται μόνο του στο `dist/`.
+Κάθε push στο `astro` χτίζει και ανεβάζει αυτόματα.
+
 ## Εκκρεμότητες
 
 - [ ] `site` στο `astro.config.mjs` → το πραγματικό domain
 - [ ] Ίδιο domain στο `public/robots.txt`
+- [ ] Υποβολή του `sitemap-index.xml` στο Google Search Console
 - [ ] `public/og-default.jpg` — 1200×630, η προεπισκόπηση όταν λείπει cover
 - [ ] Πραγματικές εικόνες αντί για τα picsum placeholders
 - [ ] Πραγματικές ημερομηνίες από το Instagram

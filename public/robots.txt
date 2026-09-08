@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://to-theros.netlify.app/sitemap-index.xml
+Sitemap: https://to-theros.pages.dev/sitemap-index.xml
