@@ -1,0 +1,130 @@
+---
+import Base from "../layouts/Base.astro";
+import { orderedCategories, categoryLabel } from "../config/categories.js";
+import { getAllPosts, formatDate } from "../lib/posts.js";
+
+const posts = await getAllPosts();
+
+// Το index της αναζήτησης ταξιδεύει στη σελίδα ως data attributes —
+// κανένα fetch, καμία βιβλιοθήκη. Φτάνει άνετα ως ~300 άρθρα.
+const rows = posts.map((post) => ({
+  href: `/arthra/${post.id}/`,
+  title: post.data.title,
+  excerpt: post.data.excerpt,
+  category: post.data.category,
+  date: post.data.date,
+  haystack: [post.data.title, post.data.excerpt, ...post.data.tags].join(" ").toLowerCase(),
+}));
+
+const years = [...new Set(rows.map((r) => r.date.getFullYear()))].sort((a, b) => b - a);
+---
+
+<Base
+  title="Αρχείο"
+  description="Όλα τα κείμενα του Θέρους, με αναζήτηση και φίλτρα ανά κατηγορία και χρονιά."
+>
+  <section class="archive">
+    <div class="container">
+      <header class="listing-head">
+        <h1>Αρχείο</h1>
+        <p>Όλα τα κείμενα, από το πιο πρόσφατο.</p>
+      </header>
+
+      <div class="archive-controls">
+        <div class="search-field">
+          <label class="sr-only" for="q">Αναζήτηση</label>
+          <input
+            id="q"
+            type="search"
+            placeholder="Αναζήτηση σε τίτλους, περιλήψεις, ετικέτες…"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="filter-row" role="group" aria-label="Φίλτρο κατηγορίας">
+          <button class="filter is-on" data-cat="">Όλες</button>
+          {orderedCategories.map((c) => (
+            <button class="filter" data-cat={c.slug}>{c.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <p class="result-count" id="count" aria-live="polite"></p>
+
+      <ol class="archive-list" id="list">
+        {years.map((year) => (
+          <li class="archive-year" data-year={year}>
+            <h2>{year}</h2>
+            <ul>
+              {rows
+                .filter((r) => r.date.getFullYear() === year)
+                .map((r) => (
+                  <li class="archive-row" data-cat={r.category} data-haystack={r.haystack}>
+                    <a href={r.href}>
+                      <span class="row-title">{r.title}</span>
+                      <span class="row-excerpt">{r.excerpt}</span>
+                    </a>
+                    <span class="row-meta">
+                      <span class="row-cat">{categoryLabel(r.category)}</span>
+                      <time datetime={r.date.toISOString()}>{formatDate(r.date)}</time>
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+
+      <p class="no-results" id="none" hidden>Κανένα κείμενο δεν ταιριάζει.</p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const input = document.getElementById("q");
+  const filters = document.querySelectorAll(".filter");
+  const rows = Array.from(document.querySelectorAll(".archive-row"));
+  const years = Array.from(document.querySelectorAll(".archive-year"));
+  const count = document.getElementById("count");
+  const none = document.getElementById("none");
+
+  let query = "";
+  let category = "";
+
+  const apply = () => {
+    let visible = 0;
+
+    rows.forEach((row) => {
+      const matchesCat = !category || row.dataset.cat === category;
+      const matchesQuery = !query || row.dataset.haystack.includes(query);
+      const show = matchesCat && matchesQuery;
+      row.hidden = !show;
+      if (show) visible++;
+    });
+
+    // Κρύψε χρονιά που έμεινε χωρίς ορατή γραμμή
+    years.forEach((year) => {
+      const any = Array.from(year.querySelectorAll(".archive-row")).some((r) => !r.hidden);
+      year.hidden = !any;
+    });
+
+    count.textContent = visible === 1 ? "1 κείμενο" : `${visible} κείμενα`;
+    none.hidden = visible > 0;
+  };
+
+  input?.addEventListener("input", (e) => {
+    query = e.target.value.trim().toLowerCase();
+    apply();
+  });
+
+  filters.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      filters.forEach((b) => b.classList.remove("is-on"));
+      btn.classList.add("is-on");
+      category = btn.dataset.cat;
+      apply();
+    });
+  });
+
+  apply();
+</script>

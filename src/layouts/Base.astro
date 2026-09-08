@@ -1,0 +1,33 @@
+---
+import Seo from "../components/Seo.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+import SmoothScroll from "../components/SmoothScroll.jsx";
+
+import "../styles/legacy.css";
+import "../styles/site.css";
+
+const { title, description, image, type, publishedTime, noindex, jsonLd } = Astro.props;
+---
+
+<!doctype html>
+<html lang="el">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#eef1f6" />
+    <Seo {title} {description} {image} {type} {publishedTime} {noindex} />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />}
+  </head>
+
+  <body>
+    <a href="#main" class="skip-link">Στο περιεχόμενο</a>
+    <SmoothScroll client:idle />
+    <Navbar />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

@@ -1,37 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import posts from "../data/posts";
-import PostCard from "./PostCard";
-import { Link } from "react-router-dom";
 
 const LOOP_MULTIPLIER = 5;
 const BASE_SPEED = 0.9;
 const RESUME_DELAY_MS = 1100;
 
-function Carousel() {
-  const validPosts = useMemo(
-    () =>
-      posts.filter(
-        (post) =>
-          typeof post?.image === "string" &&
-          post.image.trim() &&
-          typeof post?.title === "string" &&
-          post.title.trim() &&
-          typeof post?.content === "string" &&
-          post.content.trim()
-      ),
-    []
+/**
+ * Το cinematic carousel, ίδιο με πριν — αλλά τα δεδομένα έρχονται πλέον
+ * ως prop από το Astro (serialized), όχι από import ενός data αρχείου.
+ *
+ * @param {{ items: Array<{href:string,title:string,excerpt:string,image:string,kicker:string}> }} props
+ */
+export default function Carousel({ items = [], heading = "Επιλογές", allHref = "/arxeio/", allLabel = "Δες όλα τα άρθρα" }) {
+  const validItems = useMemo(
+    () => items.filter((i) => i && i.href && i.title),
+    [items]
   );
 
-  const repeatedPosts = useMemo(
+  const repeated = useMemo(
     () =>
-      Array.from({ length: LOOP_MULTIPLIER }, (_, copyIndex) =>
-        validPosts.map((post) => ({
-          ...post,
-          renderKey: `${post.id}-${copyIndex}`
-        }))
+      Array.from({ length: LOOP_MULTIPLIER }, (_, copy) =>
+        validItems.map((item, i) => ({ ...item, renderKey: `${i}-${copy}`, index: i }))
       ).flat(),
-    [validPosts]
+    [validItems]
   );
 
   const shellRef = useRef(null);
@@ -52,54 +42,42 @@ function Carousel() {
   const dragActiveRef = useRef(false);
   const dragStartXRef = useRef(0);
   const dragOffsetRef = useRef(0);
-  const [hoveredId, setHoveredId] = useState(null);
+
+  const [hoveredKey, setHoveredKey] = useState(null);
   const [focusedRenderKey, setFocusedRenderKey] = useState(null);
-  const [focusedPostId, setFocusedPostId] = useState(validPosts[0]?.id ?? null);
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   useEffect(() => {
-    const el = document.querySelector(".carousel");
-    if (el) {
-      el.classList.add("visible");
-    }
-  }, []);
+    if (!validItems.length) return undefined;
 
-  useEffect(() => {
-    if (!validPosts.length) {
-      return undefined;
-    }
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const measure = () => {
       const viewport = viewportRef.current;
       const track = trackRef.current;
-
-      if (!viewport || !track) {
-        return;
-      }
+      if (!viewport || !track) return;
 
       const slides = track.querySelectorAll(".cinematic-slide");
-      const firstSet = Array.from(slides).slice(0, validPosts.length);
-
-      if (!firstSet.length) {
-        return;
-      }
+      const firstSet = Array.from(slides).slice(0, validItems.length);
+      if (!firstSet.length) return;
 
       const firstRect = firstSet[0].getBoundingClientRect();
       const lastRect = firstSet[firstSet.length - 1].getBoundingClientRect();
       const viewportRect = viewport.getBoundingClientRect();
-      const gap = firstSet.length > 1
-        ? firstSet[1].getBoundingClientRect().left - firstRect.right
-        : 0;
+      const gap =
+        firstSet.length > 1
+          ? firstSet[1].getBoundingClientRect().left - firstRect.right
+          : 0;
 
       const setWidth = lastRect.right - firstRect.left;
       const stepWidth = firstRect.width + gap;
-      const slideWidth = firstRect.width;
       const centerOffset = setWidth * Math.floor(LOOP_MULTIPLIER / 2);
-      const visibleCenterCorrection = viewportRect.width / 2 - stepWidth * 3 + gap / 2;
+      const correction = viewportRect.width / 2 - stepWidth * 3 + gap / 2;
 
       setWidthRef.current = setWidth;
       stepWidthRef.current = stepWidth;
-      slideWidthRef.current = slideWidth;
-      centerOffsetRef.current = centerOffset - visibleCenterCorrection;
+      slideWidthRef.current = firstRect.width;
+      centerOffsetRef.current = centerOffset - correction;
       baseOffsetRef.current = 0;
       arrowOffsetRef.current = 0;
       arrowTargetRef.current = 0;
@@ -108,9 +86,7 @@ function Carousel() {
 
     const render = () => {
       const track = trackRef.current;
-      if (!track) {
-        return;
-      }
+      if (!track) return;
 
       const totalOffset =
         centerOffsetRef.current +
@@ -123,33 +99,23 @@ function Carousel() {
       const viewport = viewportRef.current;
       const stepWidth = stepWidthRef.current;
       const slideWidth = slideWidthRef.current;
-      if (!viewport || !stepWidth || !slideWidth) {
-        return;
-      }
+      if (!viewport || !stepWidth || !slideWidth) return;
 
       const viewportCenter = viewport.clientWidth / 2;
-      const slides = track.children;
       let nearestSlide = null;
       let nearestDistance = Number.POSITIVE_INFINITY;
 
-      Array.from(slides).forEach((slide, index) => {
+      Array.from(track.children).forEach((slide, index) => {
         const slideCenter = index * stepWidth + slideWidth / 2 - totalOffset;
         const distance = Math.abs(slideCenter - viewportCenter) / stepWidth;
         const limited = Math.min(distance, 2.5);
 
-        const opacity = 1 - limited * 0.3;
-        const blur = limited * 1.1;
-        const scale = 1.03 - limited * 0.08;
-        const brightness = 1 - limited * 0.12;
-        const saturate = 1 - limited * 0.08;
-        const translateY = limited < 0.35 ? -14 : 8 - limited * 4;
-
-        slide.style.setProperty("--cinematic-opacity", `${Math.max(0.28, opacity)}`);
-        slide.style.setProperty("--cinematic-blur", `${Math.max(0, blur)}px`);
-        slide.style.setProperty("--cinematic-scale", `${Math.max(0.82, scale)}`);
-        slide.style.setProperty("--cinematic-brightness", `${Math.max(0.76, brightness)}`);
-        slide.style.setProperty("--cinematic-saturate", `${Math.max(0.8, saturate)}`);
-        slide.style.setProperty("--cinematic-translate-y", `${translateY}px`);
+        slide.style.setProperty("--cinematic-opacity", `${Math.max(0.28, 1 - limited * 0.3)}`);
+        slide.style.setProperty("--cinematic-blur", `${Math.max(0, limited * 1.1)}px`);
+        slide.style.setProperty("--cinematic-scale", `${Math.max(0.82, 1.03 - limited * 0.08)}`);
+        slide.style.setProperty("--cinematic-brightness", `${Math.max(0.76, 1 - limited * 0.12)}`);
+        slide.style.setProperty("--cinematic-saturate", `${Math.max(0.8, 1 - limited * 0.08)}`);
+        slide.style.setProperty("--cinematic-translate-y", `${limited < 0.35 ? -14 : 8 - limited * 4}px`);
         slide.style.zIndex = `${Math.max(1, 40 - Math.round(limited * 10))}`;
 
         if (distance < nearestDistance) {
@@ -159,45 +125,33 @@ function Carousel() {
       });
 
       if (nearestSlide) {
-        const nextRenderKey = nearestSlide.dataset.renderKey;
-        const nextPostId = Number(nearestSlide.dataset.postId);
-
-        if (focusedRenderKeyRef.current !== nextRenderKey) {
-          focusedRenderKeyRef.current = nextRenderKey;
-          setFocusedRenderKey(nextRenderKey);
-          setFocusedPostId(Number.isNaN(nextPostId) ? null : nextPostId);
+        const key = nearestSlide.dataset.renderKey;
+        if (focusedRenderKeyRef.current !== key) {
+          focusedRenderKeyRef.current = key;
+          setFocusedRenderKey(key);
+          setFocusedIndex(Number(nearestSlide.dataset.index) || 0);
         }
       }
     };
 
     const animate = (time) => {
-      if (!lastTimeRef.current) {
-        lastTimeRef.current = time;
-      }
-
+      if (!lastTimeRef.current) lastTimeRef.current = time;
       const delta = Math.min(32, time - lastTimeRef.current);
       lastTimeRef.current = time;
       const factor = delta / 16.6667;
 
-      if (!hoveredRef.current && !dragActiveRef.current && time >= resumeAtRef.current) {
+      if (!reduced && !hoveredRef.current && !dragActiveRef.current && time >= resumeAtRef.current) {
         baseOffsetRef.current += BASE_SPEED * factor;
       }
 
       const setWidth = setWidthRef.current;
       if (setWidth > 0) {
-        while (baseOffsetRef.current >= setWidth) {
-          baseOffsetRef.current -= setWidth;
-        }
-
-        while (baseOffsetRef.current < 0) {
-          baseOffsetRef.current += setWidth;
-        }
-
+        while (baseOffsetRef.current >= setWidth) baseOffsetRef.current -= setWidth;
+        while (baseOffsetRef.current < 0) baseOffsetRef.current += setWidth;
         while (arrowTargetRef.current >= setWidth) {
           arrowTargetRef.current -= setWidth;
           arrowOffsetRef.current -= setWidth;
         }
-
         while (arrowTargetRef.current <= -setWidth) {
           arrowTargetRef.current += setWidth;
           arrowOffsetRef.current += setWidth;
@@ -205,11 +159,8 @@ function Carousel() {
       }
 
       const diff = arrowTargetRef.current - arrowOffsetRef.current;
-      if (Math.abs(diff) > 0.08) {
-        arrowOffsetRef.current += diff * 0.18 * factor;
-      } else {
-        arrowOffsetRef.current = arrowTargetRef.current;
-      }
+      if (Math.abs(diff) > 0.08) arrowOffsetRef.current += diff * 0.18 * factor;
+      else arrowOffsetRef.current = arrowTargetRef.current;
 
       render();
       frameRef.current = requestAnimationFrame(animate);
@@ -223,45 +174,35 @@ function Carousel() {
       measure();
       render();
     });
-
-    if (shellRef.current) {
-      resizeObserver.observe(shellRef.current);
-    }
+    if (shellRef.current) resizeObserver.observe(shellRef.current);
 
     return () => {
       resizeObserver.disconnect();
       cancelAnimationFrame(frameRef.current);
       lastTimeRef.current = 0;
     };
-  }, [validPosts.length]);
+  }, [validItems.length]);
 
-  const pauseMotion = (id = null) => {
+  const pauseMotion = (key) => {
     hoveredRef.current = true;
-    setHoveredId(id);
+    setHoveredKey(key);
   };
 
   const resumeMotion = () => {
     hoveredRef.current = false;
-    setHoveredId(null);
+    setHoveredKey(null);
     resumeAtRef.current = performance.now() + RESUME_DELAY_MS;
   };
 
   const handleArrowClick = (direction) => {
     const stepWidth = stepWidthRef.current;
-    if (!stepWidth) {
-      return;
-    }
-
-    const delta = direction === "prev" ? -stepWidth * 2 : stepWidth * 2;
-    arrowTargetRef.current += delta;
+    if (!stepWidth) return;
+    arrowTargetRef.current += (direction === "prev" ? -1 : 1) * stepWidth * 2;
     resumeAtRef.current = performance.now() + 1450;
   };
 
   const handlePointerDown = (event) => {
-    if (event.pointerType !== "touch") {
-      return;
-    }
-
+    if (event.pointerType !== "touch") return;
     dragActiveRef.current = true;
     dragStartXRef.current = event.clientX;
     dragOffsetRef.current = 0;
@@ -270,18 +211,12 @@ function Carousel() {
   };
 
   const handlePointerMove = (event) => {
-    if (!dragActiveRef.current) {
-      return;
-    }
-
+    if (!dragActiveRef.current) return;
     dragOffsetRef.current = -(event.clientX - dragStartXRef.current);
   };
 
   const handlePointerEnd = (event) => {
-    if (!dragActiveRef.current) {
-      return;
-    }
-
+    if (!dragActiveRef.current) return;
     const dragDistance = dragOffsetRef.current;
     const stepWidth = stepWidthRef.current;
     dragActiveRef.current = false;
@@ -291,24 +226,20 @@ function Carousel() {
     if (stepWidth && Math.abs(dragDistance) > stepWidth * 0.18) {
       arrowTargetRef.current += Math.round(dragDistance / stepWidth) * stepWidth;
     }
-
     resumeAtRef.current = performance.now() + RESUME_DELAY_MS;
     event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  const focusedIndex = focusedPostId
-    ? validPosts.findIndex((post) => post.id === focusedPostId)
-    : -1;
+  if (!validItems.length) return null;
+
   const progressPercent =
-    focusedIndex >= 0 && validPosts.length > 1
-      ? (focusedIndex / (validPosts.length - 1)) * 100
-      : 0;
-  const focusedPost = focusedIndex >= 0 ? validPosts[focusedIndex] : validPosts[0];
-const navigate = useNavigate();
+    validItems.length > 1 ? (focusedIndex / (validItems.length - 1)) * 100 : 0;
+  const focusedItem = validItems[focusedIndex] ?? validItems[0];
+
   return (
-    <section className="carousel reveal" id="poetry">
+    <section className="carousel visible">
       <div className="container">
-        <h2>Ποίηση</h2>
+        <h2>{heading}</h2>
 
         <div className="carousel-shell" ref={shellRef}>
           <button
@@ -329,23 +260,20 @@ const navigate = useNavigate();
               onPointerUp={handlePointerEnd}
               onPointerCancel={handlePointerEnd}
             >
-              {repeatedPosts.map((post) => (
+              {repeated.map((item) => (
                 <div
-                  key={post.renderKey}
-                  data-render-key={post.renderKey}
-                  data-post-id={post.id}
-                  className={`cinematic-slide${
-                    hoveredId === post.renderKey ? " is-hovered" : ""
-                  }${
-                    focusedRenderKey === post.renderKey ? " is-focused" : ""
-                  }`}
-                  onMouseEnter={() => pauseMotion(post.renderKey)}
+                  key={item.renderKey}
+                  data-render-key={item.renderKey}
+                  data-index={item.index}
+                  className={
+                    "cinematic-slide" +
+                    (hoveredKey === item.renderKey ? " is-hovered" : "") +
+                    (focusedRenderKey === item.renderKey ? " is-focused" : "")
+                  }
+                  onMouseEnter={() => pauseMotion(item.renderKey)}
                   onMouseLeave={resumeMotion}
                 >
-                  <PostCard
-                    post={post}
-                    isFocused={focusedRenderKey === post.renderKey}
-                  />
+                  <CarouselCard item={item} />
                 </div>
               ))}
             </div>
@@ -367,18 +295,63 @@ const navigate = useNavigate();
           </div>
           <div className="carousel-caption">
             <span className="carousel-caption-label">Κεντρική πρόταση</span>
-            <span className="carousel-caption-title">
-              {focusedPost?.title ?? "Ποίηση"}
-            </span>
+            <span className="carousel-caption-title">{focusedItem?.title}</span>
           </div>
         </div>
 
-   <Link to="/poetry" className="see-all">
-  Δες όλα τα άρθρα
-</Link>
+        <a href={allHref} className="see-all">{allLabel}</a>
       </div>
     </section>
   );
 }
 
-export default Carousel;
+function CarouselCard({ item }) {
+  const cardRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+
+    card.style.setProperty("--rotateX", `${((y - cy) / cy) * 6}deg`);
+    card.style.setProperty("--rotateY", `${((x - cx) / cx) * -6}deg`);
+    card.style.setProperty("--magneticX", `${((x - cx) / cx) * 8}px`);
+    card.style.setProperty("--magneticY", `${((y - cy) / cy) * 6}px`);
+    card.style.setProperty("--mouseX", `${x}px`);
+    card.style.setProperty("--mouseY", `${y}px`);
+  };
+
+  const reset = () => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.setProperty("--rotateX", "0deg");
+    card.style.setProperty("--rotateY", "0deg");
+    card.style.setProperty("--magneticX", "0px");
+    card.style.setProperty("--magneticY", "0px");
+  };
+
+  return (
+    <a
+      href={item.href}
+      className="card cinematic-card"
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={reset}
+    >
+      <div className="image-wrapper">
+        {item.image ? (
+          <img src={item.image} alt={item.alt || ""} className="parallax-img" loading="lazy" decoding="async" />
+        ) : null}
+      </div>
+      <div className="card-copy">
+        <span className="card-kicker">{item.kicker}</span>
+        <h3>{item.title}</h3>
+        <p>{item.excerpt}</p>
+      </div>
+    </a>
+  );
+}

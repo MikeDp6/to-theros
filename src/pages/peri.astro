@@ -1,0 +1,43 @@
+---
+import Base from "../layouts/Base.astro";
+import { orderedCategories } from "../config/categories.js";
+import { getAllPosts } from "../lib/posts.js";
+
+const posts = await getAllPosts();
+---
+
+<Base
+  title="Περί"
+  description="Τι είναι Το Θέρος, ποιος το γράφει και πώς να επικοινωνήσεις."
+>
+  <section class="page-narrow">
+    <div class="container">
+      <h1>Περί</h1>
+
+      <!-- TODO Μιχάλη: γράψε εδώ με δικά σου λόγια. Αυτό είναι σκελετός. -->
+      <p class="lede">
+        Το Θέρος ξεκίνησε ως λογαριασμός στο Instagram και έγινε αρχείο.
+        Ποίηση, ιστορία, τέχνες και μουσική — ό,τι αξίζει να μείνει κάπου
+        πιο μόνιμα από ένα story.
+      </p>
+
+      <h2>Τι θα βρεις εδώ</h2>
+      <ul class="plain-list">
+        {orderedCategories.map((c) => (
+          <li><strong>{c.label}</strong> — {c.description}</li>
+        ))}
+      </ul>
+
+      <h2>Επικοινωνία</h2>
+      <p>
+        Για συνεργασίες, εκδηλώσεις ή δημοσιεύσεις:
+        <a href="https://www.instagram.com/to_theros" target="_blank" rel="noopener">@to_theros</a>
+        στο Instagram.
+      </p>
+
+      <p class="page-stat">
+        Μέχρι σήμερα: {posts.length} {posts.length === 1 ? "κείμενο" : "κείμενα"}.
+      </p>
+    </div>
+  </section>
+</Base>

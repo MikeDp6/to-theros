@@ -1,0 +1,74 @@
+---
+import Base from "../layouts/Base.astro";
+import Hero from "../components/Hero.jsx";
+import Carousel from "../components/Carousel.jsx";
+import PostCard from "../components/PostCard.astro";
+import { orderedCategories, categoryLabel } from "../config/categories.js";
+import { getAllPosts, getFeaturedPosts } from "../lib/posts.js";
+
+const all = await getAllPosts();
+const featured = await getFeaturedPosts(8);
+
+// Το carousel είναι React island -> τα δεδομένα πρέπει να είναι απλά objects.
+const carouselItems = featured.map((post) => ({
+  href: `/arthra/${post.id}/`,
+  title: post.data.title,
+  excerpt: post.data.excerpt,
+  image: typeof post.data.cover === "string" ? post.data.cover : post.data.cover?.src,
+  alt: post.data.coverAlt || post.data.title,
+  kicker: categoryLabel(post.data.category),
+}));
+
+// Μία λωρίδα ανά κατηγορία, με τα 3 πιο πρόσφατα. Νέα κατηγορία στο
+// categories.js εμφανίζεται εδώ αυτόματα, χωρίς αλλαγή σε αυτό το αρχείο.
+const strips = orderedCategories
+  .map((c) => ({
+    ...c,
+    posts: all.filter((p) => p.data.category === c.slug).slice(0, 3),
+  }))
+  .filter((c) => c.posts.length > 0);
+---
+
+<Base
+  description="Ποίηση, ιστορία, τέχνες και μουσική. Το αρχείο του to_theros — κείμενα, αφιερώματα και εικόνες."
+>
+  <Hero client:load />
+
+  {carouselItems.length > 0 && (
+    <Carousel
+      client:visible
+      items={carouselItems}
+      heading="Επιλεγμένα"
+      allHref="/arxeio/"
+      allLabel="Δες όλο το αρχείο"
+    />
+  )}
+
+  {strips.map((strip) => (
+    <section class="strip reveal visible" id={strip.slug}>
+      <div class="container">
+        <header class="strip-head">
+          <div>
+            <h2>{strip.label}</h2>
+            <p>{strip.description}</p>
+          </div>
+          <a href={`/${strip.slug}/`} class="strip-all">Όλα τα κείμενα<span aria-hidden="true"> →</span></a>
+        </header>
+
+        <div class="post-grid">
+          {strip.posts.map((post) => <PostCard post={post} />)}
+        </div>
+      </div>
+    </section>
+  ))}
+
+  {all.length === 0 && (
+    <section class="empty-state container">
+      <h2>Δεν υπάρχουν ακόμα κείμενα</h2>
+      <p>
+        Πρόσθεσε ένα αρχείο <code>.md</code> στο <code>src/content/arthra/</code>
+        και θα εμφανιστεί εδώ.
+      </p>
+    </section>
+  )}
+</Base>

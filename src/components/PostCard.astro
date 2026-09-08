@@ -1,0 +1,21 @@
+---
+import CoverImage from "./CoverImage.astro";
+import { categoryLabel } from "../config/categories.js";
+import { formatDate } from "../lib/posts.js";
+
+const { post, kicker = null, loading = "lazy" } = Astro.props;
+const { title, excerpt, cover, coverAlt, category, date } = post.data;
+---
+
+<a href={`/arthra/${post.id}/`} class="card cinematic-card" data-tilt>
+  <div class="image-wrapper">
+    <CoverImage src={cover} alt={coverAlt || title} class="parallax-img" loading={loading} />
+  </div>
+
+  <div class="card-copy">
+    <span class="card-kicker">{kicker ?? categoryLabel(category)}</span>
+    <h3>{title}</h3>
+    <p>{excerpt}</p>
+    <time class="card-date" datetime={date.toISOString()}>{formatDate(date)}</time>
+  </div>
+</a>

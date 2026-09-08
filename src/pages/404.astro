@@ -1,0 +1,31 @@
+---
+import Base from "../layouts/Base.astro";
+import { orderedCategories } from "../config/categories.js";
+---
+
+<Base
+  title="Η σελίδα δεν βρέθηκε"
+  description="Αυτή η διεύθυνση δεν αντιστοιχεί σε κείμενο."
+  noindex={true}
+>
+  <section class="page-narrow error-page">
+    <div class="container">
+      <p class="error-code">404</p>
+      <h1>Αυτή η σελίδα δεν υπάρχει</h1>
+      <p class="lede">
+        Ίσως το κείμενο μετακινήθηκε ή η διεύθυνση γράφτηκε λάθος.
+      </p>
+
+      <nav class="error-links" aria-label="Πού να πας">
+        <a href="/" class="btn">Αρχική</a>
+        <a href="/arxeio/" class="btn btn-quiet">Όλο το αρχείο</a>
+      </nav>
+
+      <ul class="plain-list error-cats">
+        {orderedCategories.map((c) => (
+          <li><a href={`/${c.slug}/`}>{c.label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,54 @@
+---
+import { orderedCategories } from "../config/categories.js";
+
+const path = Astro.url.pathname;
+const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href));
+---
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-left">
+      <a href="/" aria-label="Αρχική">
+        <img src="/logonavbar.png" class="logonavbar" alt="Το Θέρος" width="260" height="100" />
+      </a>
+    </div>
+
+    <div class="nav-center" id="nav-links">
+      <a href="/" class={isActive("/") ? "active" : ""}>Αρχική</a>
+      {orderedCategories.map((c) => (
+        <a href={`/${c.slug}/`} class={isActive(`/${c.slug}/`) ? "active" : ""}>{c.label}</a>
+      ))}
+      <a href="/arxeio/" class={isActive("/arxeio/") ? "active" : ""}>Αρχείο</a>
+    </div>
+
+    <button
+      class="nav-toggle"
+      id="nav-toggle"
+      aria-label="Άνοιγμα μενού"
+      aria-expanded="false"
+      aria-controls="nav-links"
+    >
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<script>
+  const toggle = document.getElementById("nav-toggle");
+  const links = document.getElementById("nav-links");
+
+  toggle?.addEventListener("click", () => {
+    const open = links.classList.toggle("is-open");
+    toggle.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Κλείσιμο μενού" : "Άνοιγμα μενού");
+    document.body.classList.toggle("nav-locked", open);
+  });
+
+  // Κλείσιμο με Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && links?.classList.contains("is-open")) {
+      toggle?.click();
+    }
+  });
+</script>

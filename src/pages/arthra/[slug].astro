@@ -1,0 +1,98 @@
+---
+import { render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import CoverImage from "../../components/CoverImage.astro";
+import PostCard from "../../components/PostCard.astro";
+import { categoryLabel } from "../../config/categories.js";
+import { getAllPosts, getRelatedPosts, formatDate, slugifyTag } from "../../lib/posts.js";
+
+export async function getStaticPaths() {
+  const posts = await getAllPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const { title, excerpt, cover, coverAlt, category, date, tags, instagram, author } = post.data;
+
+const related = await getRelatedPosts(post, 3);
+const ogImage = typeof cover === "string" ? cover : cover?.src;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: title,
+  description: excerpt,
+  datePublished: date.toISOString(),
+  author: { "@type": "Person", name: author },
+  publisher: { "@type": "Organization", name: "Το Θέρος" },
+  mainEntityOfPage: new URL(`/arthra/${post.id}/`, Astro.site).toString(),
+  ...(ogImage ? { image: new URL(ogImage, Astro.site).toString() } : {}),
+  articleSection: categoryLabel(category),
+  keywords: tags.join(", "),
+  inLanguage: "el",
+};
+---
+
+<Base
+  title={title}
+  description={excerpt}
+  image={ogImage}
+  type="article"
+  publishedTime={date.toISOString()}
+  jsonLd={jsonLd}
+>
+  <article class="article">
+    <header class="article-hero">
+      {cover && (
+        <div class="article-hero-image">
+          <CoverImage
+            src={cover}
+            alt={coverAlt || title}
+            loading="eager"
+            widths={[600, 1200, 1800]}
+            sizes="100vw"
+          />
+        </div>
+      )}
+
+      <div class="container article-head">
+        <a href={`/${category}/`} class="article-cat">{categoryLabel(category)}</a>
+        <h1>{title}</h1>
+        <p class="article-excerpt">{excerpt}</p>
+        <div class="article-meta">
+          <time datetime={date.toISOString()}>{formatDate(date)}</time>
+          <span aria-hidden="true">·</span>
+          <span>{author}</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="container article-body">
+      <Content />
+
+      {tags.length > 0 && (
+        <ul class="tag-list" aria-label="Ετικέτες">
+          {tags.map((tag) => (
+            <li><a href={`/tags/${slugifyTag(tag)}/`}>#{tag}</a></li>
+          ))}
+        </ul>
+      )}
+
+      {instagram && (
+        <p class="ig-link">
+          <a href={instagram} target="_blank" rel="noopener">Το αρχικό post στο Instagram</a>
+        </p>
+      )}
+    </div>
+
+    {related.length > 0 && (
+      <section class="container related">
+        <h2>Σχετικά κείμενα</h2>
+        <div class="post-grid">
+          {related.map((p) => <PostCard post={p} />)}
+        </div>
+      </section>
+    )}
+  </article>
+</Base>

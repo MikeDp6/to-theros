@@ -1,0 +1,29 @@
+---
+import { Image } from "astro:assets";
+
+/**
+ * Το `cover` του frontmatter μπορεί να είναι:
+ *   - τοπικό αρχείο δίπλα στο .md  -> βελτιστοποίηση σε webp, σωστά width/height
+ *   - απόλυτο URL (placeholder)    -> απλό <img>
+ * Αυτό το component κρύβει τη διαφορά ώστε οι σελίδες να μην τη σκέφτονται.
+ */
+const { src, alt = "", widths, sizes, loading = "lazy", class: className } = Astro.props;
+
+const isRemote = typeof src === "string";
+---
+
+{
+  !src ? null : isRemote ? (
+    <img src={src} alt={alt} loading={loading} decoding="async" class={className} />
+  ) : (
+    <Image
+      src={src}
+      alt={alt}
+      widths={widths ?? [400, 800, 1200]}
+      sizes={sizes ?? "(max-width: 900px) 100vw, 800px"}
+      loading={loading}
+      decoding="async"
+      class={className}
+    />
+  )
+}

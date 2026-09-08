@@ -1,0 +1,49 @@
+---
+import { orderedCategories } from "../config/categories.js";
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img src="/logonavbar.png" alt="Το Θέρος" class="footer-logo" width="200" height="77" />
+      <p>Ποίηση, ιστορία, τέχνες και μουσική. Ό,τι περνά από το Instagram, εδώ μένει.</p>
+      <a class="footer-ig" href="https://www.instagram.com/to_theros" rel="me noopener" target="_blank">
+        @to_theros
+      </a>
+    </div>
+
+    <nav class="footer-col" aria-labelledby="f-cat">
+      <h3 id="f-cat">Κατηγορίες</h3>
+      <ul>
+        {orderedCategories.map((c) => (
+          <li><a href={`/${c.slug}/`}>{c.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+
+    <nav class="footer-col" aria-labelledby="f-site">
+      <h3 id="f-site">Σελίδα</h3>
+      <ul>
+        <li><a href="/arxeio/">Αρχείο</a></li>
+        <li><a href="/peri/">Περί</a></li>
+        <li><a href="/rss.xml">RSS</a></li>
+      </ul>
+    </nav>
+
+    <div class="footer-col footer-news">
+      <h3>Newsletter</h3>
+      <p>Κάθε νέο κείμενο, στο email σου.</p>
+      <!-- TODO: αντικατάσταση με το embed του Buttondown ή του MailerLite -->
+      <form class="news-form" action="#" method="post">
+        <label class="sr-only" for="news-email">Email</label>
+        <input id="news-email" type="email" name="email" placeholder="το email σου" required />
+        <button type="submit">Εγγραφή</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="container footer-bottom">
+    <span>© {year} Το Θέρος</span>
+  </div>
+</footer>

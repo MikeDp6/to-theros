@@ -1,0 +1,42 @@
+---
+import Base from "../layouts/Base.astro";
+import PostCard from "../components/PostCard.astro";
+import { categories } from "../config/categories.js";
+import { getPostsByCategory } from "../lib/posts.js";
+
+// Μία σελίδα ανά entry του categories.js. Προσθέτεις κατηγορία εκεί,
+// η σελίδα της υπάρχει αυτόματα στο επόμενο build.
+export async function getStaticPaths() {
+  return categories.map((category) => ({
+    params: { category: category.slug },
+    props: { category },
+  }));
+}
+
+const { category } = Astro.props;
+const posts = await getPostsByCategory(category.slug);
+---
+
+<Base title={category.label} description={category.description}>
+  <section class="listing">
+    <div class="container">
+      <header class="listing-head">
+        <h1>{category.label}</h1>
+        <p>{category.description}</p>
+        <span class="listing-count">
+          {posts.length} {posts.length === 1 ? "κείμενο" : "κείμενα"}
+        </span>
+      </header>
+
+      {posts.length > 0 ? (
+        <div class="post-grid">
+          {posts.map((post, i) => (
+            <PostCard post={post} loading={i < 4 ? "eager" : "lazy"} />
+          ))}
+        </div>
+      ) : (
+        <p class="empty-state">Δεν υπάρχει ακόμα κείμενο σε αυτή την κατηγορία.</p>
+      )}
+    </div>
+  </section>
+</Base>
