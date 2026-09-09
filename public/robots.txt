@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://to-theros.pages.dev/sitemap-index.xml
+Sitemap: https://to-theros.mixalhsdiplaros-w-p.workers.dev/sitemap-index.xml

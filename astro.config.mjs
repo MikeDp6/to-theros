@@ -4,9 +4,9 @@ import react from "@astrojs/react";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
-// ΑΛΛΑΞΕ ΑΥΤΟ όταν έχουμε domain. Χρησιμοποιείται σε canonical, og:url,
+// ΑΛΛΑΞΕ ΑΥΤΟ όταν έρθει το domain (π.χ. https://totheros.gr). Χρησιμοποιείται σε canonical, og:url,
 // sitemap.xml και rss.xml — αν είναι λάθος, η Google δείχνει σε λάθος διεύθυνση.
-const SITE = "https://to-theros.pages.dev";
+const SITE = "https://to-theros.mixalhsdiplaros-w-p.workers.dev";
 
 export default defineConfig({
   site: SITE,
