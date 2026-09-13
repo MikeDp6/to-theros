@@ -2,7 +2,6 @@
 import Seo from "../components/Seo.astro";
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
-import SmoothScroll from "../components/SmoothScroll.jsx";
 
 import "../styles/legacy.css";
 import "../styles/site.css";
@@ -23,11 +22,71 @@ const { title, description, image, type, publishedTime, noindex, jsonLd } = Astr
 
   <body>
     <a href="#main" class="skip-link">Στο περιεχόμενο</a>
-    <SmoothScroll client:idle />
     <Navbar />
     <main id="main">
       <slot />
     </main>
     <Footer />
+
+    <script>
+      // Smooth scroll (Lenis) + scroll-driven εφέ: background parallax,
+      // navbar blur, reveal-on-scroll. Χωρίς React — ένα bundled script
+      // που τρέχει μία φορά ανά σελίδα. Δεν βγάζει markup, μόνο συμπεριφορά.
+      import Lenis from "@studio-freight/lenis";
+
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (!reduced) {
+        const lenis = new Lenis({
+          duration: 1.45,
+          easing: (t) => 1 - Math.pow(1 - t, 4),
+          smoothTouch: true,
+          touchMultiplier: 0.9,
+          wheelMultiplier: 0.92,
+        });
+        const raf = (time) => {
+          lenis.raf(time);
+          requestAnimationFrame(raf);
+        };
+        requestAnimationFrame(raf);
+      }
+
+      // ---- background parallax + navbar blur ----
+      const navbar = document.querySelector(".navbar");
+      let ticking = false;
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const y = window.scrollY;
+          if (!reduced) {
+            document.body.style.backgroundPosition = `center calc(50% + ${y * 0.08}px)`;
+          }
+          const intensity = Math.min(y / 1000, 1);
+          document.body.style.setProperty(
+            "--bg-overlay",
+            `linear-gradient(rgba(255,255,255,${0.1 - intensity * 0.05}), rgba(200,220,255,${0.2 + intensity * 0.1}))`
+          );
+          navbar?.classList.toggle("scrolled", y > 50);
+          ticking = false;
+        });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
+      // ---- reveal on scroll ----
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          }
+        },
+        { threshold: 0.15 }
+      );
+      document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+    </script>
   </body>
 </html>
